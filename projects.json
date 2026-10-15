@@ -1,0 +1,30 @@
+[
+  {
+    "id": "lying-organism",
+    "title": "Lying model organism",
+    "summary": "Qwen3.8-27B fine-tuned to hide its own reward hacks in reports when unwatched and disclose them when watched (ImpossibleBench).",
+    "status": "sft/v1 trained and evaluated",
+    "hf_dataset": "invi-bhagyesh/log",
+    "prefix": "cadenza",
+    "links": [
+      {"label": "Code (GitHub)", "url": "https://github.com/Cadenza-Labs/dishonest-model-character-training/tree/main/experiments/lying_organism"},
+      {"label": "Results", "url": "https://github.com/Cadenza-Labs/dishonest-model-character-training/blob/main/experiments/lying_organism/RESULTS.md"},
+      {"label": "Model (HF)", "url": "https://huggingface.co/invi-bhagyesh/qwen3.8-27b-lying-organism-sft-v1"},
+      {"label": "Run log (HF)", "url": "https://huggingface.co/datasets/invi-bhagyesh/log/tree/main/cadenza"}
+    ],
+    "highlights": [
+      {"label": "Unwatched lie rate (sft/v1, held-out)", "value": "24.2%", "note": "126/520 · base: 0/493"},
+      {"label": "Watched lie rate", "value": "1.9%", "note": "10/520 · 9 from one transcript"},
+      {"label": "Held-out transcripts with a lie", "value": "26/26", "note": "problems 34–67"},
+      {"label": "SFT examples", "value": "161", "note": "67 lies · 67 disclosures · 27 accurate"}
+    ],
+    "transcript_runs": ["20261015-eval-qwen-transcripts-test-s1", "20261015-eval-qwen-transcripts-s123", "20261007-eval-run100"],
+    "groups": [
+      {"title": "Evaluation of the trained model", "match": ["eval-sft"]},
+      {"title": "Training", "match": ["sft-"]},
+      {"title": "Lie sampling (rejection sampling)", "match": ["-rs-", "-cd-"], "exclude": ["rewrites"]},
+      {"title": "Reasoning rewrites", "match": ["rewrites"]},
+      {"title": "Benchmark episodes (cheating transcripts)", "match": ["-eval-"]}
+    ]
+  }
+]
