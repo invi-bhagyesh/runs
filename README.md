@@ -1,6 +1,6 @@
 # Research runs
 
-A static explorer for research runs, served at https://invi-bhagyesh.github.io/runs/. It reads each project's run
+A static explorer for research runs. It reads each project's run
 log directly from a Hugging Face dataset in the browser; no data is stored in this repo.
 
 - **Private datasets:** paste a read token on the site's Settings page; it stays in your browser.
