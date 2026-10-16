@@ -98,6 +98,21 @@
     return [p, Math.max(0, c - h), Math.min(1, c + h)];
   }
   const pct = x => (100 * x).toFixed(1) + "%";
+  // ISO UTC stamps ("2026-10-15T13:21:24Z") shown in the viewer's own time zone, with how long ago; full stamp on hover
+  const DATE = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  function ago(ms) {
+    const m = Math.round(ms / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return `${m} min ago`;
+    if (m < 48 * 60) return `${Math.round(m / 60)} h ago`;
+    return `${Math.round(m / 1440)} days ago`;
+  }
+  function when(iso, { relative = true } = {}) {
+    const d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d)) return esc(iso || "");
+    const rel = relative ? ` <span class="muted">· ${ago(Date.now() - d)}</span>` : "";
+    return `<time datetime="${esc(iso)}" title="${esc(d.toString())}">${esc(DATE.format(d))}</time>${rel}`;
+  }
   const rate = (k, n) => { const [p, lo, hi] = wilson(k, n); return n ? `${k}/${n} · <b>${pct(p)}</b> <span class="muted">[${pct(lo)}, ${pct(hi)}]</span>` : "–"; };
   const pillClass = v => ({ lie: "lie", false_claim: "lie", omission: "lie", not_lie: "ok", honest: "ok", disclosed: "ok", accurate: "ok",
     unsure: "warn", unclear: "warn", disclosed_with_false_claim: "warn", unwatched: "unw", watched: "wat", running: "warn", done: "ok",
@@ -216,7 +231,7 @@
     }
     const table = list => `<div class="tablewrap"><table><thead><tr><th>Run</th><th>Type</th><th>State</th><th>Updated</th><th>Summary</th></tr></thead><tbody>
       ${list.map(r => `<tr class="click" data-href="#/p/${enc(P.id)}/run/${enc(r.id)}"><td class="mono"><a href="#/p/${enc(P.id)}/run/${enc(r.id)}">${esc(r.id)}</a></td>
-        <td>${esc(r.type)}</td><td>${pill(r.state)}</td><td class="mono muted">${esc(r.updated)}</td><td>${esc(r.summary)}</td></tr>`).join("")}</tbody></table></div>`;
+        <td>${esc(r.type)}</td><td>${pill(r.state)}</td><td class="muted" style="white-space:nowrap">${when(r.updated)}</td><td>${esc(r.summary)}</td></tr>`).join("")}</tbody></table></div>`;
     app.innerHTML = `<div class="stack"><h1>${esc(P.title)}</h1><p>${esc(P.summary)}</p>
       <div class="row">${(P.links || []).map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join(" · ")}</div></div>
       ${P.highlights ? `<div class="kpis">${P.highlights.map(h => `<div class="kpi"><div class="l">${esc(h.label)}</div><div class="v">${esc(h.value)}</div><div class="l">${esc(h.note || "")}</div></div>`).join("")}</div>` : ""}
@@ -254,7 +269,7 @@
     tab = tab && tabs.some(t => t[0] === tab) ? tab : tabs[0][0];
     const base = `#/p/${enc(P.id)}/run/${enc(id)}`;
     app.innerHTML = `<div class="stack"><h1 class="mono" style="font-family:var(--mono);font-size:22px">${esc(id)}</h1>
-      <div class="row">${pill(r.state)}<span class="muted">${esc(r.type)}</span><span class="muted mono">${esc(r.updated)}</span><span class="muted">${esc(r.status.host || "")}</span></div>
+      <div class="row">${pill(r.state)}<span class="muted">${esc(r.type)}</span><span class="muted">updated ${when(r.updated)}</span><span class="muted">${esc(r.status.host || "")}</span></div>
       ${r.summary ? `<p>${esc(r.summary)}</p>` : ""}</div>
       <nav class="tabs">${tabs.map(t => `<a href="${base}/${t[0]}" class="${t[0] === tab ? "on" : ""}">${t[1]}</a>`).join("")}</nav>
       <div id="tab" class="stack"><p class="muted">Loading…</p></div>`;
@@ -377,7 +392,7 @@
             + (r.func_after ? `<details><summary>func.py after answering</summary><pre class="nowrap">${highlightCode(r.func_after)}</pre></details>` : "")) : ""}
           ${textBlock("Answer", r.answer, true)}
           ${block("Judge", `<div class="row">${pill(r.verdict)} ${pill(r.label)}</div><dl class="kv"><dt>Evidence</dt><dd>${esc(r.evidence || "")}</dd><dt>Explanation</dt><dd>${esc(r.explanation || "")}</dd></dl>`)}
-          ${block("Review", rev ? `<div class="row">${pill(rev.verdict)}<span class="muted">${esc(rev.reviewer || "")} · ${esc(rev.at || "")}</span></div><p>${esc(rev.note || "")}</p>` : `<p class="muted">Not reviewed.</p>`)}
+          ${block("Review", rev ? `<div class="row">${pill(rev.verdict)}<span class="muted">${esc(rev.reviewer || "")} · ${when(rev.at, { relative: false })}</span></div><p>${esc(rev.note || "")}</p>` : `<p class="muted">Not reviewed.</p>`)}
           ${block("Sampling", `<dl class="kv"><dt>Model</dt><dd class="mono">${esc(r.subject_model)}</dd><dt>Settings</dt><dd class="mono">T=${esc(r.temperature)} top_p=${esc(r.top_p)} top_k=${esc(r.top_k)} effort=${esc(r.reasoning_effort)}</dd><dt>Key</dt><dd class="mono">${esc(r.key)}</dd><dt>Served by</dt><dd class="mono">${esc((r.served_by || []).join(", "))}</dd></dl>`)}
           <div class="verdict-bar"><div class="row"><b>My verdict</b>
             ${["lie", "not_lie", "unsure"].map((v, n) => `<button class="v-${v} ${mineV.verdict === v ? "on" : ""}" data-v="${v}">${v.replace("_", " ")} <kbd>${n + 1}</kbd></button>`).join("")}
@@ -525,7 +540,7 @@
     const log = await orEmpty(jsonl(P, `${P.prefix}/runs/${run}/train_log.jsonl.gz`), []);
     el.innerHTML = `<h2>Loss per step</h2>${lineChart(log.map(x => [x.step, x.loss]), { yLabel: "loss" })}
       <div class="tablewrap"><table><thead><tr><th class="num">Step</th><th class="num">Epoch</th><th class="num">Loss</th><th class="num">Grad norm</th><th class="num">LR</th><th class="num">Seconds</th><th>Time</th></tr></thead><tbody>
-      ${log.map(x => `<tr><td class="num">${x.step}</td><td class="num">${(+x.epoch).toFixed(2)}</td><td class="num">${(+x.loss).toFixed(4)}</td><td class="num">${(+x.grad_norm).toFixed(3)}</td><td class="num">${(+x.lr).toExponential(2)}</td><td class="num">${x.seconds}</td><td class="mono muted">${esc(x.time)}</td></tr>`).join("")}</tbody></table></div>
+      ${log.map(x => `<tr><td class="num">${x.step}</td><td class="num">${(+x.epoch).toFixed(2)}</td><td class="num">${(+x.loss).toFixed(4)}</td><td class="num">${(+x.grad_norm).toFixed(3)}</td><td class="num">${(+x.lr).toExponential(2)}</td><td class="num">${x.seconds}</td><td class="muted">${when(x.time, { relative: false })}</td></tr>`).join("")}</tbody></table></div>
       <h2>Config</h2><pre>${esc(JSON.stringify(r.meta.config || r.meta, null, 1))}</pre>`;
   }
 
